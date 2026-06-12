@@ -130,6 +130,9 @@ It displays simulated ATAK-style drone nodes moving in real time and exposes:
 GET /api/atak/drones
 ```
 
+Each drone opens a simulated parameter and Street View popup when it first
+starts mission execution. Drone rows and map markers can reopen the popup.
+
 See [docs/LIVE_WEB_TRACKING.md](docs/LIVE_WEB_TRACKING.md).
 
 ## Google Maps

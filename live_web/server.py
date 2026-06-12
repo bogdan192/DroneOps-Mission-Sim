@@ -169,11 +169,28 @@ HTML = r"""<!doctype html>
     .status { margin-top: 12px; padding: 10px; border-radius: 6px; background: #222a31; color: #dbe4ec; font-size: 13px; line-height: 1.35; }
     .rows { display: grid; gap: 8px; margin-top: 10px; }
     .row { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 8px; border: 1px solid #303941; border-radius: 6px; background: #151a1f; font-size: 13px; }
+    .row { cursor: pointer; }
+    .row:hover { border-color: #4b9d7d; }
     #mapShell { position: relative; min-height: 0; background: #0b0f12; }
     #map, #fallbackMap { width: 100%; height: 100%; min-height: 0; }
     #fallbackMap { display: none; }
     .badge { color: #9bd4ff; font-size: 12px; }
+    #droneModal { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.62); padding: 18px; }
+    #droneModal.open { display: flex; }
+    .modalPanel { width: min(980px, 96vw); max-height: 92vh; overflow: hidden; border: 1px solid #3b4650; border-radius: 8px; background: #151a1f; box-shadow: 0 20px 70px rgba(0,0,0,.5); display: grid; grid-template-rows: auto 1fr; }
+    .modalHead { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-bottom: 1px solid #303941; background: #1c2227; }
+    .modalHead h2 { margin: 0; font-size: 17px; }
+    .modalHead button { width: auto; margin: 0; padding: 7px 10px; background: #374553; }
+    .modalBody { display: grid; grid-template-columns: 310px 1fr; min-height: 430px; }
+    .paramPanel { padding: 14px; border-right: 1px solid #303941; overflow: auto; }
+    .paramGrid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 10px; }
+    .param { display: grid; grid-template-columns: 112px 1fr; gap: 8px; padding: 8px; border: 1px solid #2f3941; border-radius: 6px; background: #11161a; font-size: 13px; }
+    .param span:first-child { color: #9eb0bf; }
+    .streetPanel { position: relative; min-height: 430px; background: #0b0f12; }
+    #streetView { position: absolute; inset: 0; }
+    #streetFallback { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; padding: 24px; color: #c8d2dc; text-align: center; background: #0b0f12; }
     @media (max-width: 820px) { main { grid-template-columns: 1fr; grid-template-rows: auto 55vh; } aside { border-right: 0; border-bottom: 1px solid #303941; } }
+    @media (max-width: 820px) { .modalBody { grid-template-columns: 1fr; grid-template-rows: auto 48vh; } .paramPanel { border-right: 0; border-bottom: 1px solid #303941; } }
   </style>
 </head>
 <body>
@@ -207,9 +224,40 @@ HTML = r"""<!doctype html>
       <canvas id="fallbackMap"></canvas>
     </section>
   </main>
+  <div id="droneModal" aria-hidden="true">
+    <div class="modalPanel">
+      <div class="modalHead">
+        <h2 id="modalTitle">Drone</h2>
+        <button id="closeModalBtn">Close</button>
+      </div>
+      <div class="modalBody">
+        <section class="paramPanel">
+          <div class="status" id="modalStatus">Simulated onboard parameters</div>
+          <div class="paramGrid" id="paramGrid"></div>
+        </section>
+        <section class="streetPanel">
+          <div id="streetView"></div>
+          <div id="streetFallback">Street View imagery will appear here when Google imagery is available near the simulated drone.</div>
+        </section>
+      </div>
+    </div>
+  </div>
   <script>window.DRONEOPS_CONFIG = __CONFIG__;</script>
   <script>
-    const state = { map: null, googleReady: false, routeLine: null, routeMarkers: [], droneMarkers: {}, canvas: document.getElementById('fallbackMap') };
+    const state = {
+      map: null,
+      googleReady: false,
+      routeLine: null,
+      routeMarkers: [],
+      droneMarkers: {},
+      canvas: document.getElementById('fallbackMap'),
+      knownExecuting: new Set(),
+      selectedDroneId: null,
+      latestDrones: {},
+      streetService: null,
+      streetPanorama: null,
+      streetLast: { nodeId: null, lat: null, lon: null, at: 0 }
+    };
 
     function setStatus(text) { document.getElementById('status').textContent = text; }
 
@@ -223,6 +271,14 @@ HTML = r"""<!doctype html>
         zoom: 15,
         mapTypeId: 'satellite',
         streetViewControl: false
+      });
+      state.streetService = new google.maps.StreetViewService();
+      state.streetPanorama = new google.maps.StreetViewPanorama(document.getElementById('streetView'), {
+        visible: false,
+        addressControl: false,
+        linksControl: true,
+        panControl: true,
+        enableCloseButton: false
       });
       drawRoute(window.DRONEOPS_CONFIG.defaultRoute);
       poll();
@@ -264,6 +320,10 @@ HTML = r"""<!doctype html>
     }
 
     async function startMission() {
+      state.knownExecuting.clear();
+      state.selectedDroneId = null;
+      state.streetLast = { nodeId: null, lat: null, lon: null, at: 0 };
+      closeDroneModal();
       const body = {
         order: document.getElementById('order').value,
         nodeCount: Number(document.getElementById('nodes').value || 4),
@@ -292,6 +352,8 @@ HTML = r"""<!doctype html>
       setStatus(`Mission: ${payload.status || 'idle'} | tick ${payload.currentTick || 0}/${Math.max(0, (payload.totalTicks || 1) - 1)} | liveExecution=${payload.liveExecution}`);
       document.getElementById('topics').textContent = (payload.networkTopics || []).join(', ') || 'none';
       renderDrones(payload.atakDrones || []);
+      maybeAutoOpenDrone(payload.atakDrones || []);
+      refreshOpenModal();
       drawFallback(payload.atakDrones || []);
     }
 
@@ -304,11 +366,14 @@ HTML = r"""<!doctype html>
         const row = document.createElement('div');
         row.className = 'row';
         row.innerHTML = `<span>${drone.nodeId}<br>${drone.state}</span><span>${Number(drone.lat).toFixed(5)}, ${Number(drone.lon).toFixed(5)}<br>${Number(drone.batteryPercent).toFixed(0)}%</span>`;
+        row.addEventListener('click', () => openDroneModal(drone, false));
         el.appendChild(row);
+        state.latestDrones[drone.nodeId] = drone;
         if (state.googleReady && state.map) {
           const pos = { lat: Number(drone.lat), lng: Number(drone.lon) };
           if (!state.droneMarkers[drone.nodeId]) {
             state.droneMarkers[drone.nodeId] = new google.maps.Marker({ position: pos, map: state.map, label: 'D', title: drone.nodeId });
+            state.droneMarkers[drone.nodeId].addListener('click', () => openDroneModal(drone, false));
           } else {
             state.droneMarkers[drone.nodeId].setPosition(pos);
           }
@@ -319,6 +384,101 @@ HTML = r"""<!doctype html>
           if (!seen.has(id)) { marker.setMap(null); delete state.droneMarkers[id]; }
         }
       }
+    }
+
+    function maybeAutoOpenDrone(drones) {
+      for (const drone of drones) {
+        if (drone.state === 'simulating' && !state.knownExecuting.has(drone.nodeId)) {
+          state.knownExecuting.add(drone.nodeId);
+          openDroneModal(drone, true);
+          return;
+        }
+      }
+    }
+
+    function openDroneModal(drone, autoOpened) {
+      state.selectedDroneId = drone.nodeId;
+      document.getElementById('droneModal').classList.add('open');
+      document.getElementById('droneModal').setAttribute('aria-hidden', 'false');
+      renderDroneModal(drone, autoOpened);
+      updateStreetView(drone);
+    }
+
+    function closeDroneModal() {
+      document.getElementById('droneModal').classList.remove('open');
+      document.getElementById('droneModal').setAttribute('aria-hidden', 'true');
+      state.selectedDroneId = null;
+      if (state.streetPanorama) state.streetPanorama.setVisible(false);
+    }
+
+    function refreshOpenModal() {
+      if (!state.selectedDroneId) return;
+      const drone = state.latestDrones[state.selectedDroneId];
+      if (!drone) return;
+      renderDroneModal(drone, false);
+      updateStreetView(drone);
+    }
+
+    function renderDroneModal(drone, autoOpened) {
+      document.getElementById('modalTitle').textContent = `${drone.nodeId} live view`;
+      document.getElementById('modalStatus').textContent = autoOpened
+        ? 'Mission execution detected. Simulated drone parameters and Street View are live.'
+        : 'Simulated drone parameters and Street View are live.';
+      const values = [
+        ['State', drone.state],
+        ['Mission', drone.missionId || 'none'],
+        ['Latitude', Number(drone.lat).toFixed(7)],
+        ['Longitude', Number(drone.lon).toFixed(7)],
+        ['Altitude', `${Number(drone.alt).toFixed(1)} m`],
+        ['Battery', `${Number(drone.batteryPercent).toFixed(1)}%`],
+        ['Source', drone.source],
+        ['UID', drone.uid],
+        ['Live exec', String(drone.liveExecution)],
+        ['Last seen', drone.lastSeenIso || 'n/a']
+      ];
+      const grid = document.getElementById('paramGrid');
+      grid.innerHTML = '';
+      values.forEach(([label, value]) => {
+        const row = document.createElement('div');
+        row.className = 'param';
+        row.innerHTML = `<span>${label}</span><span>${value}</span>`;
+        grid.appendChild(row);
+      });
+    }
+
+    function updateStreetView(drone) {
+      const fallback = document.getElementById('streetFallback');
+      const view = document.getElementById('streetView');
+      if (!(state.googleReady && state.streetService && state.streetPanorama)) {
+        view.style.display = 'none';
+        fallback.style.display = 'flex';
+        fallback.textContent = 'Google Maps is not available, so Street View imagery cannot be loaded.';
+        return;
+      }
+      const pos = { lat: Number(drone.lat), lng: Number(drone.lon) };
+      const now = Date.now();
+      const last = state.streetLast;
+      const moved = last.nodeId !== drone.nodeId ||
+        Math.abs(Number(last.lat || 0) - pos.lat) > 0.00025 ||
+        Math.abs(Number(last.lon || 0) - pos.lng) > 0.00025;
+      if (!moved && now - last.at < 3500) return;
+      state.streetLast = { nodeId: drone.nodeId, lat: pos.lat, lon: pos.lng, at: now };
+      fallback.style.display = 'none';
+      view.style.display = 'block';
+      state.streetService.getPanorama({ location: pos, radius: 100 })
+        .then(({ data }) => {
+          if (!data || !data.location || !data.location.pano) throw new Error('No panorama data');
+          state.streetPanorama.setPano(data.location.pano);
+          state.streetPanorama.setPov({ heading: 270, pitch: 0 });
+          state.streetPanorama.setVisible(true);
+          google.maps.event.trigger(state.streetPanorama, 'resize');
+        })
+        .catch(() => {
+          state.streetPanorama.setVisible(false);
+          view.style.display = 'none';
+          fallback.style.display = 'flex';
+          fallback.textContent = `No Google Street View imagery was found near ${Number(drone.lat).toFixed(5)}, ${Number(drone.lon).toFixed(5)}.`;
+        });
     }
 
     function drawFallback(drones) {
@@ -346,6 +506,10 @@ HTML = r"""<!doctype html>
     }
 
     document.getElementById('startBtn').addEventListener('click', startMission);
+    document.getElementById('closeModalBtn').addEventListener('click', closeDroneModal);
+    document.getElementById('droneModal').addEventListener('click', event => {
+      if (event.target.id === 'droneModal') closeDroneModal();
+    });
     window.addEventListener('resize', () => drawFallback([]));
     loadMap();
   </script>
@@ -458,4 +622,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
