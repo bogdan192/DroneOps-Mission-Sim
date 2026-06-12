@@ -1,0 +1,2 @@
+"""Onboard autonomy node prototype."""
+

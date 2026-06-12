@@ -12,9 +12,20 @@ The current code uses only Python standard-library modules.
 ## Verify The Project
 
 ```powershell
-python -m py_compile tools\droneops_basestation\server.py tools\droneops_sim\sim_server.py tools\droneops_local_planner\droneops_planner.py
-python tools\droneops_basestation\server.py --self-test
-python tools\droneops_sim\sim_server.py --self-test
+powershell -ExecutionPolicy Bypass -File scripts\test.ps1
+```
+
+## Run The Onboard Node
+
+```powershell
+python onboard_node\node.py --self-test
+python onboard_node\node.py --node-id drone-01
+```
+
+Default address:
+
+```text
+http://127.0.0.1:8091
 ```
 
 ## Run The Basestation
@@ -23,7 +34,7 @@ python tools\droneops_sim\sim_server.py --self-test
 python tools\droneops_basestation\server.py
 ```
 
-Then open:
+Open:
 
 ```text
 http://127.0.0.1:8088
@@ -36,8 +47,6 @@ $env:GOOGLE_MAPS_API_KEY="your-key"
 python tools\droneops_basestation\server.py
 ```
 
-If no key is configured, the UI uses a local canvas fallback.
-
 Convenience script:
 
 ```powershell
@@ -46,11 +55,10 @@ powershell -ExecutionPolicy Bypass -File scripts\run_basestation.ps1 -GoogleMaps
 
 ## Run With Ollama
 
-Start Ollama and pull a local model, then run:
-
 ```powershell
+python onboard_node\node.py --ollama --model llama3.1:8b
 python tools\droneops_basestation\server.py --ollama --model llama3.1:8b
 ```
 
-The `Interpret Order` button will use the local model. The `Simulate` button
-still validates the route intent before it starts the local simulation.
+The model output is validated before it can become mission DSL.
+

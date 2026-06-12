@@ -1,63 +1,73 @@
 # Architecture
 
-DroneOps Mission Sim is split into three local components.
+DroneOps Mission Sim now models an onboard autonomy-node architecture.
 
-## Basestation
+## Roles
 
-Path: `tools/droneops_basestation/server.py`
+### Basestation
 
-The basestation is a local HTTP server on `127.0.0.1:8088`. It serves the web UI
-and exposes:
+The basestation is a client and visualization surface. It can create waypoints,
+send orders, and display simulated fleet telemetry. It is not the center of all
+autonomy.
 
-- `GET /api/health`
-- `GET /api/fleet`
-- `POST /api/plan`
-- `POST /api/simulate`
+### Onboard Node
 
-`/api/plan` interprets a text order into editable mission intent. `/api/simulate`
-takes waypoints and drone count directly from the UI, validates them, configures
-the simulated fleet, and starts animation.
+Path: `onboard_node/node.py`
 
-## Simulation State
+The onboard node represents software running on a drone companion computer or
+Android/ATAK device. It receives high-level orders and turns them into validated
+simulation work.
 
-Path: `tools/droneops_sim/sim_server.py`
+Endpoints:
 
-This module is the local stand-in for an ATAK DroneOps Android plugin or future
-autopilot bridge. It keeps an in-memory fleet, accepts simulation mission
-intents, and advances drone positions along route segments over time.
+- `GET /health`
+- `POST /orders`
 
-It can run embedded inside the basestation or as a separate local API.
+The onboard node:
 
-## Planner
+- publishes node status
+- interprets or accepts route waypoints
+- builds mission DSL
+- coordinates with peer status messages
+- compiles a simulation controller program
 
-Path: `tools/droneops_local_planner/droneops_planner.py`
+### Mission Core
 
-The planner converts natural-language orders into structured mission intent.
-By default it runs deterministic mock parsing. With `--ollama`, it calls the
-local Ollama API on `127.0.0.1:11434` and validates the model output.
+Path: `mission_core/mission_schema.py`
 
-The planner does not emit raw MAVLink, actuator, velocity, arming, or takeoff
-commands.
+The mission DSL is the boundary between model reasoning and controller adapters.
+It permits mission intent, constraints, operating area, and route waypoints. It
+rejects raw controller command fields.
+
+### Fleet Protocol
+
+Path: `fleet_protocol/`
+
+Fleet messages are transport-neutral JSON dictionaries. They can later be sent
+through TAK/CoT, HTTP, MQTT, or another authenticated link.
+
+### Controller Adapters
+
+Path: `controller_adapters/`
+
+Only `simulated_controller.py` exists today. It compiles a neutral local
+simulation program. Real PX4/ArduPilot adapters must be separate and safety
+gated.
 
 ## Data Flow
 
 ```text
-User edits map
-  -> POST /api/simulate
-  -> route intent validation
-  -> simulated fleet assignment
-  -> GET /api/fleet polling
-  -> map marker animation
+Order arrives at onboard node
+  -> local LLM/planner proposes route intent
+  -> mission DSL validator checks intent
+  -> fleet coordinator assigns work among peer nodes
+  -> simulation adapter compiles local controller program
+  -> telemetry/status can be visualized by the basestation
 ```
 
-Optional natural-language flow:
+## Why This Shape
 
-```text
-User writes order
-  -> POST /api/plan
-  -> mock parser or Ollama
-  -> validated editable routeWaypoints
-  -> user reviews/edits
-  -> POST /api/simulate
-```
+LLMs are useful for turning fuzzy orders into structured intent. They should not
+directly control flight. Deterministic code should own validation, task
+allocation, and controller-adapter output.
 

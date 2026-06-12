@@ -1,81 +1,109 @@
 # DroneOps Mission Sim
 
-Local, simulation-only mission planning demo for a drone basestation workflow.
+Simulation-only prototype for an onboard drone autonomy node.
 
-The demo lets you open a web basestation, add or drag waypoints on a map, choose
-a simulated drone count, and press `Simulate`. The backend validates a mission
-intent and animates a local simulated fleet. An optional Ollama adapter can turn
-natural-language orders into editable waypoints.
+The project models the architecture where each drone carries a companion device
+or Android/ATAK device that acts as a network node. That onboard node can receive
+high-level orders, use a local LLM/planner to propose a mission, coordinate with
+peer drones, and compile a validated simulation controller program.
+
+The basestation map remains useful, but it is now only one client. The core
+concept is onboard autonomy with deterministic safety gates.
 
 This project does not arm, launch, fly, or command a real aircraft.
+
+## Architecture
+
+```text
+Basestation / peer / operator order
+        |
+        v
+Onboard node API
+        |
+        v
+Local LLM or deterministic planner
+        |
+        v
+Mission DSL validation
+        |
+        v
+Fleet protocol and task allocation
+        |
+        v
+Simulation controller adapter
+        |
+        v
+Local simulated fleet / basestation visualization
+```
+
+The LLM is not a flight controller. It may propose structured mission intent.
+Deterministic code validates and compiles that intent.
 
 ## Current Features
 
 - Interactive Google Maps basestation UI.
-- Local canvas fallback when Google Maps is unavailable.
-- Editable waypoint list with latitude, longitude, and altitude.
-- Simulated fleet size from 1 to 12 drones.
-- Local mission intent validation.
+- Onboard node prototype with `/health` and `/orders`.
+- Mission DSL that forces `simulation` mode and `liveExecution: false`.
+- Fleet message schema for node status, orders, and assignments.
+- Deterministic multi-drone route-segment assignment.
+- Simulation controller-program compiler.
 - Local planner adapter with deterministic mock mode and optional Ollama mode.
-- Simulation-only API shaped like the ATAK DroneOps plugin prototype.
 
 ## Quick Start
 
-From the project root:
+Run checks:
 
 ```powershell
-python -m py_compile tools\droneops_basestation\server.py tools\droneops_sim\sim_server.py tools\droneops_local_planner\droneops_planner.py
-python tools\droneops_basestation\server.py --self-test
+powershell -ExecutionPolicy Bypass -File scripts\test.ps1
+```
+
+Run basestation:
+
+```powershell
 python tools\droneops_basestation\server.py
 ```
 
-Open:
+Run onboard node self-test:
 
-```text
-http://127.0.0.1:8088
+```powershell
+python onboard_node\node.py --self-test
 ```
 
-With Google Maps:
+Run onboard node API:
+
+```powershell
+python onboard_node\node.py --node-id drone-01
+```
+
+Submit a local order:
+
+```powershell
+$body = @{
+  order = "coordinate with peers and simulate the Bucharest outskirts route"
+  routeWaypoints = @(
+    @{ lat = 44.405700; lon = 26.301900; alt = 80 }
+    @{ lat = 44.407400; lon = 26.307800; alt = 90 }
+    @{ lat = 44.410200; lon = 26.314000; alt = 80 }
+  )
+} | ConvertTo-Json -Depth 6
+
+Invoke-WebRequest -UseBasicParsing -Method POST -Uri http://127.0.0.1:8091/orders -ContentType "application/json" -Body $body
+```
+
+## Google Maps
 
 ```powershell
 $env:GOOGLE_MAPS_API_KEY="your-key"
 python tools\droneops_basestation\server.py
 ```
 
-Or use the convenience script:
+## Ollama
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\run_basestation.ps1 -GoogleMapsApiKey "your-key"
+python onboard_node\node.py --ollama --model llama3.1:8b
 ```
 
-With Ollama order interpretation:
-
-```powershell
-python tools\droneops_basestation\server.py --ollama --model llama3.1:8b
-```
-
-## Default Demo Area
-
-The default route starts on Bucharest's eastern outskirts:
-
-```text
-44.405700, 26.301900
-```
-
-The UI also draws rough airport reference circles around Baneasa and Otopeni as
-visual warnings. These are not authoritative UAS geographical zones and are not
-legal clearance for real flight. Verify official Romanian UAS geo-zone data
-before any real-world operation.
-
-## Repository Map
-
-```text
-tools/droneops_basestation/     Web UI and basestation API
-tools/droneops_sim/             Local simulated DroneOps/fleet API
-tools/droneops_local_planner/   Local order-to-intent planner
-docs/                           Architecture, setup, safety, roadmap
-scripts/                        Convenience scripts
-```
+Ollama output is validated before it can become a mission DSL object.
 
 ## Safety Boundary
 
@@ -83,9 +111,11 @@ All current flows force:
 
 - `mode: "simulation"`
 - `liveExecution: false`
+- no raw MAVLink or actuator command fields
 - validated route waypoints
 - bounded operating area
-- altitude limits
+- altitude and speed limits
 - prohibited objective-language rejection
 
 See [docs/SAFETY.md](docs/SAFETY.md).
+

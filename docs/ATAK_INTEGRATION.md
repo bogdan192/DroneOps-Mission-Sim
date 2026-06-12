@@ -1,34 +1,36 @@
 # ATAK Integration Notes
 
-The current basestation uses an in-process simulation state. It was designed to
-mirror the shape of the ATAK DroneOps plugin prototype so the adapter can later
-be swapped.
+The corrected direction is drone-side ATAK/TAK as a network node, not merely a
+basestation UI.
 
-## Current Local API Shape
+## Intended Role
 
-The simulated DroneOps API exposes:
+An Android/ATAK device or companion computer on each drone would:
 
-- `GET /health`
-- `GET /fleet`
-- `POST /mission-intents`
+- publish node status
+- receive TAK/CoT or local network orders
+- exchange fleet protocol messages
+- host or reach a local LLM/planner
+- compile validated simulation or flight-controller programs
+- report assignment and telemetry status
 
-The basestation currently calls equivalent in-process Python methods for speed
-and reliability. To integrate with ATAK, replace that adapter with HTTP calls to
-the Android plugin endpoint or another authenticated local bridge.
+## Current Prototype
 
-## Recommended Next Step
+The current onboard node is pure Python and local HTTP. It models the API and
+data boundaries before moving them into Android/ATAK plugin code.
 
-Keep this order:
+## Future Adapter
 
-1. Basestation to local simulator.
-2. Basestation to Android emulator running ATAK and DroneOps.
-3. Android emulator to SITL autopilot.
-4. Hardware-in-loop with motors disabled or props removed.
-5. Supervised real aircraft tests only after the safety gates are implemented.
+Replace local HTTP transport with:
+
+- ATAK plugin IPC for local device communication
+- CoT event mapping for fleet messages
+- authenticated peer transport
+- a controller bridge only after simulation and safety gates
 
 ## Do Not Shortcut
 
-Do not connect `/api/simulate` directly to real MAVLink mission upload. Add an
-explicit live-flight subsystem with authentication, geofence checks, operator
+Do not connect the onboard node directly to MAVLink mission upload. Add a
+separate live-flight subsystem with authentication, geofence checks, operator
 approval, and audit logs.
 

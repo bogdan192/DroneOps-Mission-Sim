@@ -2,11 +2,19 @@
 
 ## Near Term
 
-- Add persisted mission files.
+- Persist mission DSL files.
 - Add route import/export as GeoJSON.
-- Add distance and estimated-time calculations.
-- Add better visual separation between multiple simulated drones.
-- Add authoritative UAS geographical-zone ingestion.
+- Connect basestation orders to onboard node API.
+- Add peer-node simulator with multiple onboard node processes.
+- Add transport authentication to fleet messages.
+
+## Onboard Autonomy
+
+- Add order inbox and durable mission state.
+- Add leader election or deterministic assignment authority.
+- Add conflict resolution for competing assignments.
+- Add telemetry freshness checks.
+- Add prompt-injection filtering for incoming orders.
 
 ## Simulation Expansion
 
@@ -17,9 +25,9 @@
 
 ## ATAK Expansion
 
-- Replace in-process simulation adapter with a configurable DroneOps API target.
-- Add Android emulator setup notes.
-- Add authenticated bridge from ATAK plugin to basestation.
+- Map fleet protocol messages to CoT events.
+- Add Android/ATAK plugin bridge.
+- Test Android emulator plus onboard node loopback.
 
 ## Real-Flight Preconditions
 

@@ -1,15 +1,15 @@
 # Ollama Integration
 
-The local planner can call Ollama to interpret natural-language orders into
-mission intent JSON.
+The onboard node and basestation planner can call Ollama to interpret
+natural-language orders into mission intent.
 
-## Run
+## Run Onboard Node With Ollama
 
 ```powershell
-python tools\droneops_basestation\server.py --ollama --model llama3.1:8b
+python onboard_node\node.py --ollama --model llama3.1:8b
 ```
 
-The basestation sends orders to:
+The node sends orders to:
 
 ```text
 http://127.0.0.1:11434/api/chat
