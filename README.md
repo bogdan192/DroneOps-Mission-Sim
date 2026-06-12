@@ -48,6 +48,7 @@ Deterministic code validates and compiles that intent.
 - Deterministic multi-drone route-segment assignment.
 - Simulation controller-program compiler.
 - End-to-end mock mission runtime for the missing TAK/network/controller pieces.
+- Live web mission tracker with an ATAK-style `/api/atak/drones` endpoint.
 - Local planner adapter with deterministic mock mode and optional Ollama mode.
 
 ## Quick Start
@@ -74,6 +75,12 @@ Run a full mocked mission:
 
 ```powershell
 python mock_runtime\mission_simulator.py
+```
+
+Run the live web tracker:
+
+```powershell
+python live_web\server.py
 ```
 
 Run onboard node API:
@@ -108,6 +115,22 @@ The mock runtime simulates the missing pieces around the onboard node:
 - telemetry updates
 
 See [docs/MOCK_SIMULATION.md](docs/MOCK_SIMULATION.md).
+
+## Live Tracking
+
+The live tracking page is available at:
+
+```text
+http://127.0.0.1:8092
+```
+
+It displays simulated ATAK-style drone nodes moving in real time and exposes:
+
+```text
+GET /api/atak/drones
+```
+
+See [docs/LIVE_WEB_TRACKING.md](docs/LIVE_WEB_TRACKING.md).
 
 ## Google Maps
 

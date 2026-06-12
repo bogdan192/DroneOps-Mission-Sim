@@ -40,6 +40,25 @@ Or:
 powershell -ExecutionPolicy Bypass -File scripts\run_mock_mission.ps1 -Nodes 4 -Ticks 8
 ```
 
+## Run The Live Web Tracker
+
+```powershell
+python live_web\server.py
+```
+
+Open:
+
+```text
+http://127.0.0.1:8092
+```
+
+With Google Maps:
+
+```powershell
+$env:GOOGLE_MAPS_API_KEY="your-key"
+python live_web\server.py
+```
+
 ## Run The Basestation
 
 ```powershell
