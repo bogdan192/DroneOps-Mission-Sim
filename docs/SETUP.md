@@ -28,6 +28,18 @@ Default address:
 http://127.0.0.1:8091
 ```
 
+## Run A Mocked Mission
+
+```powershell
+python mock_runtime\mission_simulator.py
+```
+
+Or:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\run_mock_mission.ps1 -Nodes 4 -Ticks 8
+```
+
 ## Run The Basestation
 
 ```powershell
@@ -61,4 +73,3 @@ python tools\droneops_basestation\server.py --ollama --model llama3.1:8b
 ```
 
 The model output is validated before it can become mission DSL.
-

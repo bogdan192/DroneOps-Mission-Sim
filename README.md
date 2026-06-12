@@ -47,6 +47,7 @@ Deterministic code validates and compiles that intent.
 - Fleet message schema for node status, orders, and assignments.
 - Deterministic multi-drone route-segment assignment.
 - Simulation controller-program compiler.
+- End-to-end mock mission runtime for the missing TAK/network/controller pieces.
 - Local planner adapter with deterministic mock mode and optional Ollama mode.
 
 ## Quick Start
@@ -69,6 +70,12 @@ Run onboard node self-test:
 python onboard_node\node.py --self-test
 ```
 
+Run a full mocked mission:
+
+```powershell
+python mock_runtime\mission_simulator.py
+```
+
 Run onboard node API:
 
 ```powershell
@@ -89,6 +96,18 @@ $body = @{
 
 Invoke-WebRequest -UseBasicParsing -Method POST -Uri http://127.0.0.1:8091/orders -ContentType "application/json" -Body $body
 ```
+
+## Mock Mission Runtime
+
+The mock runtime simulates the missing pieces around the onboard node:
+
+- TAK/mesh message transport
+- peer drone status messages
+- mission proposal and assignment publication
+- simulation controller-program execution
+- telemetry updates
+
+See [docs/MOCK_SIMULATION.md](docs/MOCK_SIMULATION.md).
 
 ## Google Maps
 
@@ -118,4 +137,3 @@ All current flows force:
 - prohibited objective-language rejection
 
 See [docs/SAFETY.md](docs/SAFETY.md).
-
