@@ -2,9 +2,10 @@ __pycache__/
 *.py[cod]
 *.log
 .venv/
+.venv-ui-tests/
 venv/
 .env
+demo_config.env
 .idea/
 .vscode/
 .DS_Store
-

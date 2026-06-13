@@ -40,6 +40,30 @@ Windows:
 powershell -ExecutionPolicy Bypass -File scripts\test.ps1
 ```
 
+## Browser UI Tests
+
+The browser UI tests use Playwright as a development/test dependency. The helper
+creates a local `.venv-ui-tests` folder, installs `requirements-dev.txt`, and
+downloads Playwright Chromium without admin access.
+
+macOS/Linux:
+
+```bash
+python3 -B scripts/run_browser_ui_tests.py
+```
+
+Windows:
+
+```powershell
+python -B scripts\run_browser_ui_tests.py
+```
+
+After the first install, rerun faster with:
+
+```bash
+python3 -B scripts/run_browser_ui_tests.py --skip-install
+```
+
 ## Run The Onboard Node
 
 macOS/Linux:

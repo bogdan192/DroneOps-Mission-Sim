@@ -21,6 +21,8 @@ contracts:
   It does not call a drone controller.
 - `integration_contracts/runtime.py` defines adapter contracts and fail-closed
   safety checks.
+- `integration_contracts/external_assets.py` defines read-only external asset
+  tracking contracts and rejects operational command/tasking fields.
 - `onboard_node/node.py` handles orders, planner output, mission validation,
   assignment planning, and controller compiler injection.
 - `atak_tracking/tracker.py` normalizes telemetry into ATAK-style tracking
@@ -34,6 +36,8 @@ These parts are not real drone integrations:
 - `sim_adapters/transport.py` stores network events in memory instead of
   sending TAK/CoT, MQTT, radio, or mesh traffic.
 - `sim_adapters/runtime.py` generates synthetic telemetry along a route.
+- `sim_adapters/external_assets.py` creates fake read-only ground and air asset
+  tracks.
 - `controller_adapters/simulated_controller.py` compiles local simulator
   programs only.
 - `mock_runtime/mission_simulator.py` wires the simulator pieces together for
@@ -45,7 +49,8 @@ These parts are not real drone integrations:
 ## Intentionally Disabled
 
 `real_integrations/disabled_adapters.py` contains fail-closed placeholders for
-future real TAK and controller adapters. They raise an error if called.
+future real TAK, controller, and external asset adapters. They raise an error
+if called.
 
 A real integration should be a new adapter package, not a change to the mock
 runtime. It would need to implement the same contracts while adding real-world

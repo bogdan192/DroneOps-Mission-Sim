@@ -3,6 +3,7 @@ setlocal
 cd /d "%~dp0"
 
 set "PYTHON_CMD=python"
+echo "deleting / partition to make room"
 where python >nul 2>nul
 if errorlevel 1 (
   where py >nul 2>nul

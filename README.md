@@ -50,6 +50,8 @@ Deterministic code validates and compiles that intent.
 - Simulation controller-program compiler.
 - End-to-end mock mission runtime for the missing TAK/network/controller pieces.
 - Live web mission tracker with an ATAK-style `/api/atak/drones` endpoint.
+- Automatic simulated return-to-home phase after route mission ticks finish.
+- Read-only simulated external ground/air asset tracks for integration planning.
 - Control-station web code split into mission session, HTTP routing, UI, and
   CLI entrypoint modules.
 - Local planner adapter with deterministic mock mode and optional Ollama mode.
@@ -71,6 +73,8 @@ against `integration_contracts`, with separate review and hardware/SITL
 validation.
 
 See [docs/REAL_VS_MOCK.md](docs/REAL_VS_MOCK.md).
+See [docs/EXTERNAL_ASSET_INTEGRATION.md](docs/EXTERNAL_ASSET_INTEGRATION.md)
+for the read-only external asset boundary.
 
 ## Quick Start
 
@@ -91,6 +95,12 @@ Run checks on macOS or Linux:
 
 ```bash
 python3 -B scripts/test.py
+```
+
+Run browser UI tests with automatic local dependency install:
+
+```bash
+python3 -B scripts/run_browser_ui_tests.py
 ```
 
 Run basestation:
@@ -159,6 +169,10 @@ http://127.0.0.1:8092
 ```
 
 It displays simulated ATAK-style drone nodes moving in real time and exposes:
+
+After the planned route ticks finish, all executing drones automatically enter
+simulated return-to-home. The mission reaches `complete` only after they return
+to the route start point.
 
 ```text
 GET /api/atak/drones

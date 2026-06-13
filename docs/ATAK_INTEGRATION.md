@@ -19,12 +19,17 @@ An Android/ATAK device or companion computer on each drone would:
 The current onboard node is pure Python and local HTTP. It models the API and
 data boundaries before moving them into Android/ATAK plugin code.
 
+The control station also has a read-only external asset integration contract for
+ground, air, maritime, fixed, or relay tracks. See
+`docs/EXTERNAL_ASSET_INTEGRATION.md`.
+
 ## Future Adapter
 
 Replace local HTTP transport with:
 
 - ATAK plugin IPC for local device communication
 - CoT event mapping for fleet messages
+- read-only CoT/track ingest for external assets
 - authenticated peer transport
 - a controller bridge only after simulation and safety gates
 
@@ -33,4 +38,3 @@ Replace local HTTP transport with:
 Do not connect the onboard node directly to MAVLink mission upload. Add a
 separate live-flight subsystem with authentication, geofence checks, operator
 approval, and audit logs.
-

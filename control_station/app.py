@@ -38,7 +38,24 @@ def self_test():
     later = session.snapshot()
     assert later["currentTick"] >= first["currentTick"]
     assert session.atak_snapshot()["drones"]
-    return later
+
+    with session.lock:
+        session.started_at = time.time() - (session.total_ticks * session.tick_seconds)
+    returning = session.snapshot()
+    assert returning["status"] == "returning_home"
+    assert "mission.return_home" in returning["networkTopics"]
+    assert {item["state"] for item in returning["telemetry"]} == {"returning_home"}
+
+    with session.lock:
+        session.started_at = time.time() - ((session.total_timeline_ticks_locked() - 1) * session.tick_seconds)
+    complete = session.snapshot()
+    assert complete["status"] == "complete"
+    home = complete["routeWaypoints"][0]
+    for item in complete["telemetry"]:
+        assert item["state"] == "complete"
+        assert abs(item["position"]["lat"] - home["lat"]) < 0.000001
+        assert abs(item["position"]["lon"] - home["lon"]) < 0.000001
+    return complete
 
 
 def main():

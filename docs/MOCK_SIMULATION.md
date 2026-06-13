@@ -14,6 +14,7 @@ It mocks:
 - assignment distribution
 - controller-program execution
 - telemetry updates
+- automatic simulated return-to-home after the route timeline ends
 
 It does not contact ATAK, a phone, a flight controller, or a real drone.
 
@@ -49,3 +50,6 @@ mock order
 
 The result includes network topics, assignments, controller programs, and final
 telemetry. Every generated controller program still has `liveExecution: false`.
+After the route timeline ends, mock telemetry transitions through
+`returning_home` and then `complete` once each selected drone reaches the route
+start point.

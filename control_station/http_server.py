@@ -25,6 +25,22 @@ class ControlStationHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/atak/drones":
             self._json(200, self.server.mission_session.atak_snapshot())
             return
+        if parsed.path == "/api/assets":
+            self._json(200, {
+                "mode": "SIMULATION_ONLY",
+                "source": "mock-external-assets",
+                "readOnly": True,
+                "assets": self.server.mission_session.snapshot()["externalAssets"],
+            })
+            return
+        if parsed.path == "/api/observations":
+            self._json(200, {
+                "mode": "SIMULATION_ONLY",
+                "source": "mock-observation-sensor",
+                "readOnly": True,
+                "observations": self.server.mission_session.observations_snapshot(),
+            })
+            return
         self._json(404, {"error": "not_found"})
 
     def do_POST(self):
@@ -34,6 +50,9 @@ class ControlStationHandler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/api/orders/live":
             self._live_order()
+            return
+        if parsed.path == "/api/observations":
+            self._observation_report()
             return
         self._json(404, {"error": "not_found"})
 
@@ -62,6 +81,13 @@ class ControlStationHandler(BaseHTTPRequestHandler):
                 payload.get("targets"),
                 payload.get("command"),
             )
+            self._json(200, snapshot)
+        except Exception as exc:
+            self._json(422, {"error": str(exc), "mode": "SIMULATION_ONLY"})
+
+    def _observation_report(self):
+        try:
+            snapshot = self.server.mission_session.add_observation_report(self._read_json())
             self._json(200, snapshot)
         except Exception as exc:
             self._json(422, {"error": str(exc), "mode": "SIMULATION_ONLY"})

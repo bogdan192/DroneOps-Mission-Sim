@@ -81,9 +81,11 @@ mission_core/mission_schema.py    Mission DSL validation and safety checks
 fleet_protocol/messages.py        JSON-compatible fleet message builders
 fleet_protocol/coordinator.py     Deterministic assignment planner
 integration_contracts/runtime.py  Adapter contracts and fail-closed checks
+integration_contracts/external_assets.py Read-only external asset contracts
 onboard_node/node.py              Onboard node API and orchestration
 controller_adapters/              Controller compilers
 sim_adapters/                     Simulation-only fleet, transport, runtime
+sim_adapters/external_assets.py   Mock read-only external asset feed
 mock_runtime/mission_simulator.py End-to-end CLI simulation harness
 control_station/                  Control station session, API, UI, app
 live_web/server.py                Compatibility entrypoint to control_station
@@ -95,6 +97,7 @@ tools/droneops_sim/               Local simulation tooling
 scripts/test.ps1                  Full local check script
 scripts/test.py                   Cross-platform full local check script
 scripts/demo_launcher.py          Shared no-admin local demo launcher
+scripts/run_browser_ui_tests.py   Auto-installs local Playwright UI test deps
 docs/                             Architecture, safety, setup, and API docs
 ```
 
@@ -123,6 +126,12 @@ Windows PowerShell:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\test.ps1
+```
+
+Run browser UI checks with local no-admin dependency install:
+
+```bash
+python3 -B scripts/run_browser_ui_tests.py
 ```
 
 Run onboard node self-test:
@@ -163,8 +172,12 @@ $env:GOOGLE_MAPS_API_KEY="your-key"
 - Add or update docs when changing project structure.
 - Add tests for safety gates, adapter boundaries, and message schemas.
 - Use `python3 -B scripts/test.py` or `scripts/test.ps1` after changes.
+- Use `python3 -B scripts/run_browser_ui_tests.py` for browser-level UI
+  coverage. It creates `.venv-ui-tests`, installs `requirements-dev.txt`, and
+  downloads Playwright Chromium locally.
 - This repo is Python with Windows PowerShell and macOS/Linux Bash launchers.
-  Avoid adding dependencies unless the project clearly needs them.
+  Runtime code should avoid dependencies; dev/test dependencies belong in
+  `requirements-dev.txt`.
 
 ## Useful Docs
 

@@ -13,3 +13,12 @@ class DisabledRealControllerCompiler:
     def __call__(self, node_id, mission, assignment):
         reject_real_execution("Real controller compiler")
 
+
+class DisabledRealExternalAssetFeed:
+    def snapshot(self):
+        reject_real_execution("Real external asset feed")
+
+
+class DisabledRealObservationFeed:
+    def snapshot(self):
+        reject_real_execution("Real observation feed")

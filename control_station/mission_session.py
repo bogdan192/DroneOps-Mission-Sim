@@ -8,7 +8,10 @@ from atak_tracking.tracker import AtakDroneTracker
 from fleet_protocol import messages
 from mission_core import mission_schema
 from onboard_node.node import DEFAULT_ROUTE, OnboardNode
+from integration_contracts.observations import normalize_observation_report
+from sim_adapters.external_assets import build_simulated_external_assets
 from sim_adapters.fleet import build_simulated_fleet
+from sim_adapters.observations import generate_simulated_observation_reports
 from sim_adapters.runtime import SimulatedDroneRuntime, lerp, route_position
 from sim_adapters.transport import InMemoryTakNetwork
 
@@ -26,6 +29,7 @@ class ControlStationMissionSession:
         self.order = "coordinate with peers and simulate the Bucharest outskirts route"
         self.node_count = 4
         self.total_ticks = 18
+        self.return_home_ticks = 10
         self.tick_seconds = 0.7
         self.route_waypoints = DEFAULT_ROUTE
         self.started_at = None
@@ -34,8 +38,12 @@ class ControlStationMissionSession:
         self.controller_programs = []
         self.runtimes = []
         self.available_fleet = build_simulated_fleet(self.node_count)
+        self.external_assets = build_simulated_external_assets()
+        self.observation_reports = []
+        self.reported_observation_ids = set()
         self.selected_node_ids = [node["nodeId"] for node in self.available_fleet]
         self.live_orders = {}
+        self.auto_rth_announced = False
         self.network = None
         self.latest_telemetry = []
         self.status = "idle"
@@ -154,6 +162,26 @@ class ControlStationMissionSession:
             self._advance_locked()
             return self.tracker.snapshot()
 
+    def observations_snapshot(self):
+        with self.lock:
+            self._advance_locked()
+            return list(self.observation_reports)
+
+    def add_observation_report(self, report):
+        with self.lock:
+            normalized = normalize_observation_report(report)
+            if normalized["reportId"] in self.reported_observation_ids:
+                self.observation_reports = [
+                    item if item["reportId"] != normalized["reportId"] else normalized
+                    for item in self.observation_reports
+                ]
+            else:
+                self.reported_observation_ids.add(normalized["reportId"])
+                self.observation_reports.append(normalized)
+            if self.network:
+                self.network.publish("observation.report", normalized)
+            return self.snapshot_locked()
+
     def snapshot_locked(self):
         return {
             "mode": "SIMULATION_ONLY",
@@ -162,9 +190,13 @@ class ControlStationMissionSession:
             "order": self.order,
             "nodeCount": self.node_count,
             "availableDrones": self.available_fleet,
+            "externalAssets": self.external_assets,
+            "observationReports": self.observation_reports,
             "selectedNodeIds": self.selected_node_ids,
             "routeWaypoints": self.route_waypoints,
-            "totalTicks": self.total_ticks,
+            "missionTicks": self.total_ticks,
+            "returnHomeTicks": self.return_home_ticks,
+            "totalTicks": self.total_timeline_ticks_locked(),
             "currentTick": self.current_tick_locked(),
             "mission": self.mission,
             "assignmentPlan": self.assignment_plan,
@@ -183,7 +215,10 @@ class ControlStationMissionSession:
     def current_tick_locked(self):
         if not self.started_at:
             return 0
-        return min(self.total_ticks - 1, int((time.time() - self.started_at) / self.tick_seconds))
+        return min(self.total_timeline_ticks_locked() - 1, int((time.time() - self.started_at) / self.tick_seconds))
+
+    def total_timeline_ticks_locked(self):
+        return self.total_ticks + self.return_home_ticks
 
     def network_topics_locked(self):
         if not self.network:
@@ -194,6 +229,8 @@ class ControlStationMissionSession:
         if not self.started_at or not self.runtimes:
             return
         tick = self.current_tick_locked()
+        if tick >= self.total_ticks:
+            self._announce_auto_rth_locked()
         telemetry = []
         for runtime in self.runtimes:
             item = self._telemetry_with_live_order(runtime, tick)
@@ -201,16 +238,23 @@ class ControlStationMissionSession:
             self.network.publish("mission.telemetry", item)
         self.latest_telemetry = telemetry
         self.tracker.update_from_telemetry(telemetry)
-        if tick >= self.total_ticks - 1:
+        self._collect_observations_locked(telemetry)
+        if tick >= self.total_timeline_ticks_locked() - 1:
             self.status = "complete"
+        elif tick >= self.total_ticks:
+            self.status = "returning_home"
+        else:
+            self.status = "running"
 
     def _runtime_telemetry(self, node_id, tick):
         for runtime in self.runtimes:
             if runtime.node_id == node_id:
-                return runtime.telemetry_at(tick, self.total_ticks)
+                return runtime.telemetry_at(min(tick, self.total_ticks - 1), self.total_ticks)
         raise ValueError("unknown runtime node: {}".format(node_id))
 
     def _telemetry_with_live_order(self, runtime, tick):
+        if tick >= self.total_ticks:
+            return self._auto_return_home_telemetry(runtime, tick)
         order = self.live_orders.get(runtime.node_id)
         if not order:
             return runtime.telemetry_at(tick, self.total_ticks)
@@ -228,6 +272,48 @@ class ControlStationMissionSession:
             return self._manual_telemetry(runtime, position, state, tick)
         return runtime.telemetry_at(tick, self.total_ticks)
 
+    def _collect_observations_locked(self, telemetry):
+        mission_id = self.mission["missionId"] if self.mission else ""
+        reports = generate_simulated_observation_reports(
+            telemetry,
+            self.reported_observation_ids,
+            mission_id=mission_id,
+        )
+        for report in reports:
+            self.reported_observation_ids.add(report["reportId"])
+            self.observation_reports.append(report)
+            self.network.publish("observation.report", report)
+
+    def _auto_return_home_telemetry(self, runtime, tick):
+        elapsed = max(0, tick - self.total_ticks)
+        fraction = min(1.0, elapsed / float(max(1, self.return_home_ticks - 1)))
+        route_end = runtime.telemetry_at(self.total_ticks - 1, self.total_ticks)["position"]
+        home = route_position(self.route_waypoints[0])
+        position = {
+            "lat": round(lerp(route_end["lat"], home["lat"], fraction), 7),
+            "lon": round(lerp(route_end["lon"], home["lon"], fraction), 7),
+            "alt": round(lerp(route_end["alt"], home["alt"], fraction), 1),
+        }
+        state = "complete" if fraction >= 1.0 else "returning_home"
+        return self._manual_telemetry(runtime, position, state, tick)
+
+    def _announce_auto_rth_locked(self):
+        if self.auto_rth_announced:
+            return
+        self.auto_rth_announced = True
+        for runtime in self.runtimes:
+            self.network.publish("mission.return_home", {
+                "type": "mission.return_home",
+                "schemaVersion": "0.1",
+                "timestamp": messages.timestamp(),
+                "missionId": self.mission["missionId"],
+                "nodeId": runtime.node_id,
+                "command": "auto_return_to_home",
+                "reason": "mission_complete",
+                "home": route_position(self.route_waypoints[0]),
+                "liveExecution": False,
+            })
+
     def _manual_telemetry(self, runtime, position, state, tick):
         runtime.battery_percent = max(20.0, 96.0 - tick * 0.4)
         return {
@@ -244,4 +330,3 @@ class ControlStationMissionSession:
 
 
 LiveMissionState = ControlStationMissionSession
-

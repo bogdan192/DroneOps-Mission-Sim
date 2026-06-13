@@ -114,6 +114,7 @@ mission_core/mission_schema.py    Validates mission DSL and rejects raw fields
 fleet_protocol/messages.py        Builds transport-neutral messages
 fleet_protocol/coordinator.py     Plans deterministic assignments
 integration_contracts/runtime.py  Adapter protocols and safety gate helpers
+integration_contracts/external_assets.py Read-only external asset contracts
 onboard_node/node.py              Order handling and mission orchestration
 controller_adapters/              Controller compiler implementations
 sim_adapters/                     Simulation-only adapter implementations
@@ -124,6 +125,7 @@ atak_tracking/                    ATAK-style tracking normalization
 real_integrations/                Disabled placeholders for future adapters
 scripts/                          Local checks and launch helpers
 scripts/demo_launcher.py          Shared no-admin local demo launcher
+scripts/run_browser_ui_tests.py   Auto-installs local Playwright UI test deps
 tools/                            Demo servers and planner tooling
 ```
 
@@ -140,6 +142,15 @@ Windows PowerShell:
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\test.ps1
 ```
+
+Browser UI checks:
+
+```bash
+python3 -B scripts/run_browser_ui_tests.py
+```
+
+This creates `.venv-ui-tests`, installs `requirements-dev.txt`, and downloads
+Playwright Chromium locally without admin access.
 
 Focused checks:
 
@@ -160,3 +171,5 @@ python -B live_web\server.py --self-test
   or schema behavior.
 - Keep safety checks close to the mission DSL and integration contracts.
 - Keep launch and test paths portable across Windows, macOS, and Linux.
+- Keep runtime dependencies out of the core demo unless required; browser test
+  dependencies belong in `requirements-dev.txt`.

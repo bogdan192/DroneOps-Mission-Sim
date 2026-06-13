@@ -37,6 +37,16 @@ def load_local_env():
 
 
 def pick_port(host, preferred_port, attempts=20):
+    if preferred_port == 0:
+        session = ControlStationMissionSession()
+        server = ControlStationServer(
+            (host, 0),
+            ControlStationHandler,
+            session,
+            google_maps_api_key=get_google_maps_api_key(),
+        )
+        return server.server_address[1], server
+
     last_error = None
     for port in range(preferred_port, preferred_port + attempts):
         try:

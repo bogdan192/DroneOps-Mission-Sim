@@ -22,6 +22,11 @@ The popup shows simulated onboard parameters and a Google Street View panel near
 the current simulated position. If no Street View panorama is available near the
 coordinates, the popup shows a clear fallback message.
 
+When the planned route timeline ends, every executing drone automatically enters
+the simulated `returning_home` phase. Mission status becomes `complete` only
+after all selected drones reach the route start point. This is mock telemetry
+behavior, not a real aircraft command.
+
 ## Run
 
 ```powershell
@@ -91,6 +96,9 @@ Starts a simulated mission.
 
 Returns the mission state, assignments, controller programs, latest telemetry,
 and normalized tracked drones.
+
+The response includes `missionTicks`, `returnHomeTicks`, and `totalTicks`.
+`totalTicks` covers the full route-plus-return timeline.
 
 ### `GET /api/atak/drones`
 
