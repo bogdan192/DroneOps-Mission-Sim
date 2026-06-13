@@ -28,7 +28,7 @@ def plan_assignments(mission, fleet_status):
         assigned_segments = [segment for segment_index, segment in enumerate(segments) if segment_index % len(candidates) == index]
         if not assigned_segments:
             assigned_segments = [segments[index % len(segments)]]
-        assigned_route = stitch_segments(assigned_segments)
+        assigned_route = prepend_common_start(route[0], stitch_segments(assigned_segments))
         assignments.append(messages.mission_assignment(
             mission["missionId"],
             node["nodeId"],
@@ -75,6 +75,22 @@ def stitch_segments(segments):
     return stitched
 
 
+def prepend_common_start(start_point, assigned_route):
+    if not assigned_route:
+        return [start_point]
+    if same_position(start_point, assigned_route[0]):
+        return assigned_route
+    return [start_point] + assigned_route
+
+
+def same_position(a, b):
+    return (
+        float(a["lat"]) == float(b["lat"]) and
+        float(a["lon"]) == float(b["lon"]) and
+        float(a.get("alt", 0)) == float(b.get("alt", 0))
+    )
+
+
 def self_test():
     mission = mission_schema.self_test()
     fleet = [
@@ -84,6 +100,8 @@ def self_test():
     plan = plan_assignments(mission, fleet)
     assert plan["assignmentCount"] == 2
     assert plan["assignments"][0]["liveExecution"] is False
+    for assignment in plan["assignments"]:
+        assert same_position(mission["routeWaypoints"][0], assignment["routeWaypoints"][0])
     return plan
 
 

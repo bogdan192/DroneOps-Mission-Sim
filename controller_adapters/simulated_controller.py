@@ -12,6 +12,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, ROOT)
 
 from mission_core import mission_schema
+from integration_contracts.runtime import require_simulation_payload
 
 
 def compile_simulation_program(node_id, mission, assignment):
@@ -35,6 +36,7 @@ def compile_simulation_program(node_id, mission, assignment):
         "routeWaypoints": route,
     }
     mission_schema.reject_raw_command_fields(program)
+    require_simulation_payload(program, "controllerProgram")
     return program
 
 

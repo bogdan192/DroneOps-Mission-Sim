@@ -6,6 +6,10 @@ It represents the software carried by a drone on a companion computer or
 Android/ATAK device. In a future system, this node would exchange status and
 mission messages with other drones and with the basestation.
 
+The node is orchestration code. It does not contain a hardware driver. Its
+controller compiler is injected, and the default compiler is the simulation
+adapter.
+
 ## Run
 
 ```powershell
@@ -47,7 +51,7 @@ Returns:
 - validated mission DSL
 - fleet assignment plan
 - local assignment
-- simulation controller program
+- controller program from the configured adapter
 - safety summary
 
 ## Local LLM Role
@@ -55,4 +59,3 @@ Returns:
 With `--ollama`, the node can ask a local model to interpret an order. The model
 does not emit controller commands. It proposes mission structure which is then
 validated by deterministic code.
-

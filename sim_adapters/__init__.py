@@ -1,0 +1,2 @@
+"""Simulation-only adapter implementations."""
+

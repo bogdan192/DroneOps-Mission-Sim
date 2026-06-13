@@ -15,6 +15,9 @@ test program.
 - Speed must be positive and at most `20 m/s`.
 - The system does not generate raw MAVLink commands.
 - The system does not arm, take off, land, or control actuators.
+- Simulator modules live under `sim_adapters`, `mock_runtime`, and `live_web`.
+  Real-capable adapters must not import from those modules.
+- Real adapter placeholders under `real_integrations` fail closed.
 
 ## Required Gates Before Real Flight
 
@@ -44,4 +47,3 @@ The architecture must account for:
 
 The current prototype is intentionally local and simulation-only while those
 controls are designed.
-

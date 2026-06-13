@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 
 $root = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
-$python = "C:\Program Files\Python313\python.exe"
+$python = "python"
 $out = Join-Path $PSScriptRoot "basestation.out.log"
 $err = Join-Path $PSScriptRoot "basestation.err.log"
 

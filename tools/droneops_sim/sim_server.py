@@ -292,7 +292,8 @@ def self_test(host, port):
     server = ThreadingHTTPServer((host, port), DroneOpsHandler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    base = "http://{}:{}".format(host, port)
+    actual_host, actual_port = server.server_address
+    base = "http://{}:{}".format(actual_host, actual_port)
     try:
         print(json.dumps(request_json("GET", base + "/health"), indent=2, sort_keys=True))
         intent = {

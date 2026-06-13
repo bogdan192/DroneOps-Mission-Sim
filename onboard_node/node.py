@@ -24,17 +24,20 @@ import droneops_planner  # noqa: E402
 
 DEFAULT_ROUTE = [
     {"label": "START", "lat": 44.4057, "lon": 26.3019, "alt": 80},
-    {"label": "WP1", "lat": 44.4074, "lon": 26.3078, "alt": 90},
-    {"label": "END", "lat": 44.4102, "lon": 26.3140, "alt": 80},
+    {"label": "NORTH", "lat": 44.4092, "lon": 26.3056, "alt": 90},
+    {"label": "EAST", "lat": 44.4081, "lon": 26.3142, "alt": 88},
+    {"label": "SOUTH", "lat": 44.4039, "lon": 26.3128, "alt": 86},
+    {"label": "RETURN", "lat": 44.4059, "lon": 26.3022, "alt": 80},
 ]
 
 
 class OnboardNode:
-    def __init__(self, node_id, position=None, model="llama3.1:8b", use_ollama=False):
+    def __init__(self, node_id, position=None, model="llama3.1:8b", use_ollama=False, controller_compiler=None):
         self.node_id = node_id
         self.position = position or {"lat": 44.4057, "lon": 26.3019, "alt": 80}
         self.model = model
         self.use_ollama = use_ollama
+        self.controller_compiler = controller_compiler or simulated_controller.compile_simulation_program
 
     def status(self):
         return messages.node_status(
@@ -52,11 +55,7 @@ class OnboardNode:
         fleet = fleet_status or self.default_fleet()
         assignment_plan = coordinator.plan_assignments(mission, fleet)
         assignment = self.assignment_for_node(assignment_plan)
-        controller_program = simulated_controller.compile_simulation_program(
-            self.node_id,
-            mission,
-            assignment,
-        )
+        controller_program = self.compile_controller_program(self.node_id, mission, assignment)
         return {
             "nodeStatus": self.status(),
             "mission": mission,
@@ -69,6 +68,9 @@ class OnboardNode:
                 "requiresHumanApproval": True,
             },
         }
+
+    def compile_controller_program(self, node_id, mission, assignment):
+        return self.controller_compiler(node_id, mission, assignment)
 
     def _route_from_order(self, order_text):
         if self.use_ollama:
@@ -161,6 +163,8 @@ def self_test():
     )
     assert result["controllerProgram"]["liveExecution"] is False
     assert result["assignmentPlan"]["assignmentCount"] >= 1
+    assert len(DEFAULT_ROUTE) >= 5
+    assert mission_schema.distance_meters(DEFAULT_ROUTE[0], DEFAULT_ROUTE[-1]) < 50
     return result
 
 
@@ -183,4 +187,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

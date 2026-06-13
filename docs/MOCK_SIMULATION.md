@@ -3,6 +3,9 @@
 The mock runtime fills the missing pieces around the onboard autonomy node so
 the full flow can be exercised locally.
 
+It is a harness over `sim_adapters/`. It is not the place to add real TAK,
+MAVLink, PX4, ArduPilot, radio, or phone integrations.
+
 It mocks:
 
 - TAK/mesh message transport
@@ -36,14 +39,13 @@ python mock_runtime\mission_simulator.py --nodes 6 --ticks 10
 
 ```text
 mock order
-  -> mock TAK network
+  -> sim_adapters.transport.InMemoryTakNetwork
   -> onboard node
   -> mission DSL
   -> fleet coordinator
   -> simulated controller programs
-  -> telemetry timeline
+  -> sim_adapters.runtime.SimulatedDroneRuntime telemetry timeline
 ```
 
 The result includes network topics, assignments, controller programs, and final
 telemetry. Every generated controller program still has `liveExecution: false`.
-

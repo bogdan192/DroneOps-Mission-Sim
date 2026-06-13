@@ -1,18 +1,40 @@
-# Live Web Tracking
+# Control Station Web Tracking
 
-The live web tracker runs the mocked onboard-node mission in a browser and
-streams changing drone positions through polling APIs.
+The control station web tracker runs the simulation-only onboard-node mission in
+a browser and streams changing drone positions through polling APIs.
 
-It mocks ATAK drone tracking by normalizing mission telemetry into an
-ATAK/CoT-like tracker model. The same API can later be fed by a real ATAK plugin
-or CoT receiver.
+Implementation is split by responsibility:
 
-When a drone first enters mission execution, the page opens a drone detail
-popup. The popup shows simulated onboard parameters and a Google Street View
-panel near the current simulated position. If no Street View panorama is
-available near the coordinates, the popup shows a clear fallback message.
+- `control_station/mission_session.py` owns mission session state, selected
+  drones, live-order simulation, and telemetry advancement.
+- `control_station/http_server.py` owns HTTP routing and JSON responses.
+- `control_station/ui.py` owns the browser HTML/CSS/JavaScript template.
+- `control_station/app.py` owns CLI startup and self-test wiring.
+- `live_web/server.py` is only a compatibility entrypoint.
+
+The control station uses `sim_adapters/` for fleet inventory, transport, and
+telemetry. It then normalizes simulated mission telemetry into an ATAK/CoT-like
+tracker model. The tracker model is reusable; this web server is not a real
+ATAK, phone, or drone integration.
+
+Clicking or hovering over a drone map icon opens a compact drone detail popup.
+The popup shows simulated onboard parameters and a Google Street View panel near
+the current simulated position. If no Street View panorama is available near the
+coordinates, the popup shows a clear fallback message.
 
 ## Run
+
+```powershell
+python -m control_station.app
+```
+
+macOS/Linux:
+
+```bash
+python3 -B -m control_station.app
+```
+
+Legacy entrypoint:
 
 ```powershell
 python live_web\server.py
@@ -28,20 +50,33 @@ With Google Maps:
 
 ```powershell
 $env:GOOGLE_MAPS_API_KEY="your-key"
-python live_web\server.py
+python -m control_station.app
 ```
 
-Or:
+macOS/Linux:
+
+```bash
+export GOOGLE_MAPS_API_KEY="your-key"
+python3 -B -m control_station.app
+```
+
+Windows convenience script:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\run_live_web.ps1 -GoogleMapsApiKey "your-key"
+```
+
+macOS/Linux convenience script:
+
+```bash
+GOOGLE_MAPS_API_KEY="your-key" bash scripts/run_control_station.sh
 ```
 
 ## APIs
 
 ### `POST /api/mission/start`
 
-Starts a mocked mission.
+Starts a simulated mission.
 
 ```json
 {
