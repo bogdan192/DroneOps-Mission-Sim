@@ -13,6 +13,7 @@ SYNTAX_FILES = [
     "onboard_node/node.py",
     "mission_core/mission_schema.py",
     "integration_contracts/runtime.py",
+    "integration_contracts/atak_telemetry.py",
     "integration_contracts/external_assets.py",
     "integration_contracts/observations.py",
     "fleet_protocol/messages.py",
@@ -20,6 +21,7 @@ SYNTAX_FILES = [
     "sim_adapters/fleet.py",
     "sim_adapters/transport.py",
     "sim_adapters/runtime.py",
+    "sim_adapters/atak_feeds.py",
     "sim_adapters/external_assets.py",
     "sim_adapters/observations.py",
     "real_integrations/disabled_adapters.py",
@@ -42,10 +44,12 @@ SYNTAX_FILES = [
 
 SELF_TESTS = [
     ["mission_core/mission_schema.py"],
+    ["integration_contracts/atak_telemetry.py"],
     ["integration_contracts/external_assets.py"],
     ["integration_contracts/observations.py"],
     ["fleet_protocol/coordinator.py"],
     ["sim_adapters/fleet.py"],
+    ["sim_adapters/atak_feeds.py"],
     ["sim_adapters/external_assets.py"],
     ["sim_adapters/observations.py"],
     ["controller_adapters/simulated_controller.py"],

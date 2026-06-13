@@ -52,6 +52,9 @@ Deterministic code validates and compiles that intent.
 - Live web mission tracker with an ATAK-style `/api/atak/drones` endpoint.
 - Automatic simulated return-to-home phase after route mission ticks finish.
 - Read-only simulated external ground/air asset tracks for integration planning.
+- Read-only ATAK/CoT-style telemetry scaffold for ATAK-equipped drones,
+  personnel/team devices, and other air assets.
+- Read-only simulated observation reports with image captures and map pins.
 - Control-station web code split into mission session, HTTP routing, UI, and
   CLI entrypoint modules.
 - Local planner adapter with deterministic mock mode and optional Ollama mode.
@@ -75,6 +78,10 @@ validation.
 See [docs/REAL_VS_MOCK.md](docs/REAL_VS_MOCK.md).
 See [docs/EXTERNAL_ASSET_INTEGRATION.md](docs/EXTERNAL_ASSET_INTEGRATION.md)
 for the read-only external asset boundary.
+See [docs/ATAK_TELEMETRY_INTEGRATION.md](docs/ATAK_TELEMETRY_INTEGRATION.md)
+for the inbound ATAK telemetry scaffold.
+See [docs/OBSERVATION_REPORTS.md](docs/OBSERVATION_REPORTS.md) for the
+simulated image-report flow.
 
 ## Quick Start
 

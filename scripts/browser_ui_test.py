@@ -57,7 +57,7 @@ def run_browser_checks(url):
         expect(page.locator("#returnBtn")).to_be_disabled()
         expect(page.locator("#liveOrderHint")).to_contain_text("Start a mission")
         expect(page.locator("#phaseText")).to_contain_text("Plan a route")
-        expect(page.locator("#assets .row")).to_have_count(3, timeout=5000)
+        expect(page.locator("#assets .row")).to_have_count(6, timeout=5000)
 
         page.locator("#startBtn").click()
         expect(page.locator("#drones .row")).to_have_count(4, timeout=5000)

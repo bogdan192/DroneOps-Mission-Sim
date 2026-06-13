@@ -21,8 +21,12 @@ contracts:
   It does not call a drone controller.
 - `integration_contracts/runtime.py` defines adapter contracts and fail-closed
   safety checks.
+- `integration_contracts/atak_telemetry.py` defines read-only ATAK/CoT-style
+  track ingest contracts for drones, personnel/team devices, and air assets.
 - `integration_contracts/external_assets.py` defines read-only external asset
   tracking contracts and rejects operational command/tasking fields.
+- `integration_contracts/observations.py` defines read-only image/coordinate
+  observation report contracts.
 - `onboard_node/node.py` handles orders, planner output, mission validation,
   assignment planning, and controller compiler injection.
 - `atak_tracking/tracker.py` normalizes telemetry into ATAK-style tracking
@@ -36,8 +40,12 @@ These parts are not real drone integrations:
 - `sim_adapters/transport.py` stores network events in memory instead of
   sending TAK/CoT, MQTT, radio, or mesh traffic.
 - `sim_adapters/runtime.py` generates synthetic telemetry along a route.
+- `sim_adapters/atak_feeds.py` creates fake ATAK-equipped drone,
+  personnel/team, and air-asset tracks.
 - `sim_adapters/external_assets.py` creates fake read-only ground and air asset
   tracks.
+- `sim_adapters/observations.py` creates fake image/coordinate observation
+  reports as drones pass points of interest.
 - `controller_adapters/simulated_controller.py` compiles local simulator
   programs only.
 - `mock_runtime/mission_simulator.py` wires the simulator pieces together for

@@ -94,8 +94,14 @@ def assert_api_flow():
         assert health["mode"] == "SIMULATION_ONLY"
         assets_payload = request_json("GET", base + "/api/assets")
         assert assets_payload["readOnly"] is True
-        assert len(assets_payload["assets"]) >= 2
+        assert len(assets_payload["assets"]) >= 6
         assert all(asset["readOnly"] for asset in assets_payload["assets"])
+        assert any(asset["kind"] == "drone" for asset in assets_payload["assets"])
+        assert any(asset["kind"] == "personnel" for asset in assets_payload["assets"])
+        atak_tracks_payload = request_json("GET", base + "/api/atak/tracks")
+        assert atak_tracks_payload["readOnly"] is True
+        assert len(atak_tracks_payload["tracks"]) >= 3
+        assert any(track["kind"] == "drone" for track in atak_tracks_payload["tracks"])
         observations_payload = request_json("GET", base + "/api/observations")
         assert observations_payload["readOnly"] is True
         assert observations_payload["observations"] == []
@@ -104,6 +110,7 @@ def assert_api_flow():
         assert before["status"] == "idle"
         assert before["atakDrones"] == []
         assert before["externalAssets"]
+        assert before["atakTracks"]
         assert before["observationReports"] == []
 
         posted = request_json("POST", base + "/api/observations", {

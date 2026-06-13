@@ -16,7 +16,17 @@ from fleet_protocol import messages  # noqa: E402
 
 
 ALLOWED_DOMAINS = {"ground", "air", "maritime", "fixed", "unknown"}
-ALLOWED_KINDS = {"vehicle", "aircraft", "team", "sensor", "relay", "unknown"}
+ALLOWED_KINDS = {
+    "vehicle",
+    "aircraft",
+    "team",
+    "personnel",
+    "drone",
+    "uas",
+    "sensor",
+    "relay",
+    "unknown",
+}
 PROHIBITED_FIELDS = {
     "target",
     "targets",

@@ -8,6 +8,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, ROOT)
 
 from integration_contracts.external_assets import asset_to_cot_like, normalize_external_asset  # noqa: E402
+from sim_adapters.atak_feeds import build_simulated_atak_external_assets  # noqa: E402
 
 
 def build_simulated_external_assets():
@@ -45,13 +46,15 @@ def build_simulated_external_assets():
         asset = normalize_external_asset(item)
         asset["cotLike"] = asset_to_cot_like(asset)
         assets.append(asset)
-    return assets
+    return assets + build_simulated_atak_external_assets()
 
 
 def self_test():
     assets = build_simulated_external_assets()
-    assert len(assets) == 3
+    assert len(assets) == 6
     assert {asset["domain"] for asset in assets} == {"ground", "air"}
+    assert any(asset["kind"] == "drone" for asset in assets)
+    assert any(asset["kind"] == "personnel" for asset in assets)
     assert all(asset["readOnly"] for asset in assets)
     return assets
 

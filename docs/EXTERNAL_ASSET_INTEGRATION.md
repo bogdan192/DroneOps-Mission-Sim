@@ -6,6 +6,7 @@ maritime, fixed, or relay assets in the control station.
 The goal is shared situational awareness:
 
 - receive or replay asset tracks
+- consume normalized ATAK/CoT-style track inputs
 - normalize them into a simple JSON shape
 - expose CoT-like records for client display
 - show them on the control-station map
@@ -25,9 +26,14 @@ This layer does not support:
 - `integration_contracts/external_assets.py` defines the read-only asset schema,
   prohibited fields, and CoT-like mapping.
 - `sim_adapters/external_assets.py` provides simulated ground and air tracks for
-  local demos.
+  local demos, including normalized simulated ATAK track examples.
+- `integration_contracts/atak_telemetry.py` defines the read-only ATAK/CoT-like
+  track ingest scaffold.
+- `sim_adapters/atak_feeds.py` provides simulated ATAK-equipped drone,
+  personnel/team, and air-asset tracks.
 - `control_station/mission_session.py` includes `externalAssets` in snapshots.
-- `control_station/http_server.py` exposes `GET /api/assets`.
+- `control_station/http_server.py` exposes `GET /api/assets` and
+  `GET /api/atak/tracks`.
 - `control_station/ui.py` shows external assets as read-only tracks.
 - `real_integrations/disabled_adapters.py` includes a fail-closed real external
   asset feed placeholder.
@@ -51,8 +57,11 @@ This layer does not support:
 ```
 
 Allowed domains are `ground`, `air`, `maritime`, `fixed`, and `unknown`.
-Allowed kinds are `vehicle`, `aircraft`, `team`, `sensor`, `relay`, and
-`unknown`.
+Allowed kinds are `vehicle`, `aircraft`, `team`, `personnel`, `drone`, `uas`,
+`sensor`, `relay`, and `unknown`.
+
+See `docs/ATAK_TELEMETRY_INTEGRATION.md` for the inbound ATAK/CoT-style track
+scaffold.
 
 ## Future Real Adapter Boundary
 

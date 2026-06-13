@@ -25,6 +25,9 @@ The project currently provides:
 - A local planner with deterministic mock mode and optional Ollama mode.
 - Simulator adapters for fake fleet inventory, in-memory transport, and
   synthetic telemetry.
+- Read-only ATAK/CoT-style telemetry ingest scaffolding for simulated
+  ATAK-equipped drones, personnel/team tracks, and other air assets.
+- Read-only observation reports with image captures and map pins.
 - A browser-based control station split into mission session, HTTP API, UI, and
   CLI startup modules.
 - Fail-closed placeholders for future real integrations.
@@ -81,10 +84,13 @@ mission_core/mission_schema.py    Mission DSL validation and safety checks
 fleet_protocol/messages.py        JSON-compatible fleet message builders
 fleet_protocol/coordinator.py     Deterministic assignment planner
 integration_contracts/runtime.py  Adapter contracts and fail-closed checks
+integration_contracts/atak_telemetry.py Read-only ATAK/CoT track ingest
 integration_contracts/external_assets.py Read-only external asset contracts
+integration_contracts/observations.py Read-only image/coordinate report contracts
 onboard_node/node.py              Onboard node API and orchestration
 controller_adapters/              Controller compilers
 sim_adapters/                     Simulation-only fleet, transport, runtime
+sim_adapters/atak_feeds.py        Mock ATAK drone/personnel/air tracks
 sim_adapters/external_assets.py   Mock read-only external asset feed
 mock_runtime/mission_simulator.py End-to-end CLI simulation harness
 control_station/                  Control station session, API, UI, app
@@ -184,6 +190,8 @@ $env:GOOGLE_MAPS_API_KEY="your-key"
 - `docs/REAL_VS_MOCK.md`
 - `docs/ARCHITECTURE.md`
 - `docs/SAFETY.md`
+- `docs/ATAK_TELEMETRY_INTEGRATION.md`
+- `docs/OBSERVATION_REPORTS.md`
 - `docs/MISSION_DSL.md`
 - `docs/FLEET_PROTOCOL.md`
 - `docs/ONBOARD_NODE.md`

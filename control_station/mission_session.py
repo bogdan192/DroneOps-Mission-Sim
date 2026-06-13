@@ -9,6 +9,7 @@ from fleet_protocol import messages
 from mission_core import mission_schema
 from onboard_node.node import DEFAULT_ROUTE, OnboardNode
 from integration_contracts.observations import normalize_observation_report
+from sim_adapters.atak_feeds import build_simulated_atak_tracks
 from sim_adapters.external_assets import build_simulated_external_assets
 from sim_adapters.fleet import build_simulated_fleet
 from sim_adapters.observations import generate_simulated_observation_reports
@@ -38,6 +39,7 @@ class ControlStationMissionSession:
         self.controller_programs = []
         self.runtimes = []
         self.available_fleet = build_simulated_fleet(self.node_count)
+        self.atak_tracks = build_simulated_atak_tracks()
         self.external_assets = build_simulated_external_assets()
         self.observation_reports = []
         self.reported_observation_ids = set()
@@ -190,6 +192,7 @@ class ControlStationMissionSession:
             "order": self.order,
             "nodeCount": self.node_count,
             "availableDrones": self.available_fleet,
+            "atakTracks": self.atak_tracks,
             "externalAssets": self.external_assets,
             "observationReports": self.observation_reports,
             "selectedNodeIds": self.selected_node_ids,

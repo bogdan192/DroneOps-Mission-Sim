@@ -25,6 +25,15 @@ class ControlStationHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/atak/drones":
             self._json(200, self.server.mission_session.atak_snapshot())
             return
+        if parsed.path == "/api/atak/tracks":
+            snapshot = self.server.mission_session.snapshot()
+            self._json(200, {
+                "mode": "SIMULATION_ONLY",
+                "source": "mock-atak-feed",
+                "readOnly": True,
+                "tracks": snapshot["atakTracks"],
+            })
+            return
         if parsed.path == "/api/assets":
             self._json(200, {
                 "mode": "SIMULATION_ONLY",

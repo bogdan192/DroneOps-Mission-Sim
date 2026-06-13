@@ -9,6 +9,11 @@ class DisabledRealTakTransport:
         reject_real_execution("Real TAK transport adapter")
 
 
+class DisabledRealAtakTrackFeed:
+    def snapshot(self):
+        reject_real_execution("Real ATAK track feed")
+
+
 class DisabledRealControllerCompiler:
     def __call__(self, node_id, mission, assignment):
         reject_real_execution("Real controller compiler")
