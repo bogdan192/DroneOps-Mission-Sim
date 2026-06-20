@@ -44,8 +44,11 @@ Implemented today:
 - ATAK/CoT-like telemetry normalization in `atak_tracking/tracker.py`.
 - Read-only ATAK/CoT-style track ingest scaffolding in
   `integration_contracts/atak_telemetry.py`.
+- Read-only ATAK drone connector registration, heartbeat, and middleware
+  scaffolding in `integration_contracts/drone_connectors.py`.
 - Simulated ATAK-equipped drone, personnel/team, and air-asset tracks in
   `sim_adapters/atak_feeds.py`.
+- Simulated ATAK drone connector records in `sim_adapters/drone_connectors.py`.
 - Read-only observation report contracts and simulated image reports in
   `integration_contracts/observations.py` and `sim_adapters/observations.py`.
 - Optional Ollama planner support in `tools/droneops_local_planner/`.
@@ -111,6 +114,7 @@ CLAUDE.md                         Claude-facing instructions
 docs/REAL_VS_MOCK.md              Boundary between reusable and simulated code
 docs/ARCHITECTURE.md              System architecture
 docs/SAFETY.md                    Safety contract
+docs/ATAK_DRONE_CONNECTORS.md     Read-only ATAK drone connector scaffold
 docs/ATAK_TELEMETRY_INTEGRATION.md Read-only ATAK/CoT track scaffold
 docs/OBSERVATION_REPORTS.md       Read-only image/coordinate reports
 docs/MISSION_DSL.md               Mission DSL shape
@@ -123,6 +127,7 @@ fleet_protocol/messages.py        Builds transport-neutral messages
 fleet_protocol/coordinator.py     Plans deterministic assignments
 integration_contracts/runtime.py  Adapter protocols and safety gate helpers
 integration_contracts/atak_telemetry.py Read-only ATAK/CoT track ingest
+integration_contracts/drone_connectors.py Read-only connector lifecycle records
 integration_contracts/external_assets.py Read-only external asset contracts
 integration_contracts/observations.py Read-only observation reports
 onboard_node/node.py              Order handling and mission orchestration

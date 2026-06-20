@@ -14,6 +14,27 @@ class DisabledRealAtakTrackFeed:
         reject_real_execution("Real ATAK track feed")
 
 
+class DisabledRealAtakPluginBridge:
+    def publish_cot(self, cot_event):
+        reject_real_execution("Real ATAK plugin bridge")
+
+    def poll_orders(self):
+        reject_real_execution("Real ATAK plugin bridge")
+
+
+class DisabledRealAtakDroneConnectorRegistry:
+    def register(self, registration):
+        reject_real_execution("Real ATAK drone connector registry")
+
+    def heartbeat(self, heartbeat):
+        reject_real_execution("Real ATAK drone connector registry")
+
+
+class DisabledRealDroneMiddlewareConnector:
+    def snapshot(self):
+        reject_real_execution("Real drone middleware connector")
+
+
 class DisabledRealControllerCompiler:
     def __call__(self, node_id, mission, assignment):
         reject_real_execution("Real controller compiler")

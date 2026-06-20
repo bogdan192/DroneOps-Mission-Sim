@@ -164,6 +164,7 @@ HTML = r"""<!doctype html>
       map: null, googleReady: false, streetService: null, streetPanorama: null,
       route: window.DRONEOPS_CONFIG.defaultRoute.map(p => ({ ...p })),
       selectedNodeIds: new Set(['drone-01', 'drone-02', 'drone-03', 'drone-04']),
+      availableDrones: [],
       latestDrones: {}, latestAssets: {}, latestObservations: {}, droneMarkers: {}, assetMarkers: {}, observationMarkers: {}, routeMarkers: [], routeLines: [],
       drawMode: true, selectedDroneId: null, followDroneId: null, knownExecuting: new Set(),
       streetLast: { nodeId: null, lat: null, lon: null, at: 0 },
@@ -205,8 +206,24 @@ HTML = r"""<!doctype html>
       $('returnBtn').disabled = !canOrder;
       $('liveOrderHint').textContent = canOrder ? 'Live orders target selected drones in this simulation only.' : 'Start a mission and select an executing drone to enable live orders.';
     }
-    function droneNumber(nodeId) { return Math.max(1, Number(String(nodeId).split('-')[1] || 1)); }
+    function generatedFleetIds() { const count = Math.max(1, Math.min(12, Number($('nodes').value || 4))); return Array.from({ length: count }, (_, i) => `drone-${String(i + 1).padStart(2, '0')}`); }
+    function fleetIds() {
+      const ids = [...generatedFleetIds()];
+      for (const drone of state.availableDrones) if (!ids.includes(drone.nodeId)) ids.push(drone.nodeId);
+      return ids;
+    }
+    function fleetInfo(nodeId) { return state.availableDrones.find(drone => drone.nodeId === nodeId) || {}; }
+    function droneNumber(nodeId) {
+      const numeric = Number(String(nodeId).match(/(\d+)$/)?.[1]);
+      if (Number.isFinite(numeric) && numeric > 0) return numeric;
+      return Math.max(1, fleetIds().indexOf(nodeId) + 1);
+    }
     function droneIdentity(nodeId) { return dronePalette[(droneNumber(nodeId) - 1) % dronePalette.length]; }
+    function droneBadge(nodeId) {
+      const match = String(nodeId).match(/drone-(\d+)$/);
+      if (match) return `D${Number(match[1])}`;
+      return String(nodeId).split(/[-_]/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase().slice(0, 2) || 'D';
+    }
     function waypointColor(index, total) {
       if (index === 0) return '#41d68b';
       if (index === total - 1) return '#ff7a68';
@@ -222,16 +239,20 @@ HTML = r"""<!doctype html>
     function addWaypoint(point) { state.route.push({ label: 'WP' + state.route.length, lat: Number(point.lat), lon: Number(point.lon), alt: Number(point.alt || 80) }); setRoute(state.route); }
     function updateWaypoint(index, key, value) { state.route[index][key] = key === 'label' ? value : Number(value); setRoute(state.route); }
     function removeWaypoint(index) { state.route.splice(index, 1); setRoute(state.route); }
-    function fleetIds() { const count = Math.max(1, Math.min(12, Number($('nodes').value || 4))); return Array.from({ length: count }, (_, i) => `drone-${String(i + 1).padStart(2, '0')}`); }
     function renderFleetRoster() {
       const roster = $('fleetRoster'); roster.innerHTML = '';
       for (const nodeId of fleetIds()) {
         const latest = state.latestDrones[nodeId];
+        const info = fleetInfo(nodeId);
         const card = document.createElement('label');
         const identity = droneIdentity(nodeId);
         card.className = 'droneCard' + (state.selectedNodeIds.has(nodeId) ? ' selected' : '');
         card.style.setProperty('--drone-color', identity.color);
-        card.innerHTML = `<input type="checkbox" ${state.selectedNodeIds.has(nodeId) ? 'checked' : ''}><span class="droneGlyph shape-${identity.shape}">D${droneNumber(nodeId)}</span><span>${nodeId}<br><span class="micro">${latest ? latest.state : 'available'}</span></span><span>${latest ? Number(latest.batteryPercent).toFixed(0) + '%' : 'ready'}</span>`;
+        const stateText = latest ? latest.state : (info.state || 'available');
+        const sourceText = latest ? latest.source : (info.source || info.role || 'local-sim');
+        const battery = latest ? Number(latest.batteryPercent).toFixed(0) + '%' : (info.batteryPercent != null ? Number(info.batteryPercent).toFixed(0) + '%' : 'ready');
+        const callsign = info.callsign && info.callsign !== nodeId ? `${escapeHtml(info.callsign)}<br>` : '';
+        card.innerHTML = `<input type="checkbox" ${state.selectedNodeIds.has(nodeId) ? 'checked' : ''}><span class="droneGlyph shape-${identity.shape}">${droneBadge(nodeId)}</span><span>${callsign}${escapeHtml(nodeId)}<br><span class="micro">${escapeHtml(stateText)} · ${escapeHtml(sourceText)}</span></span><span>${battery}</span>`;
         const box = card.querySelector('input');
         box.addEventListener('change', () => { box.checked ? state.selectedNodeIds.add(nodeId) : state.selectedNodeIds.delete(nodeId); renderFleetRoster(); updateActionStates(); });
         roster.appendChild(card);
@@ -325,6 +346,10 @@ HTML = r"""<!doctype html>
     async function poll() { try { const response = await fetch('/api/mission'); render(await response.json()); } catch (error) { setStatus('Polling failed: ' + error.message); } setTimeout(poll, 700); }
     function render(payload) {
       state.missionStatus = payload.status || 'idle';
+      state.availableDrones = payload.availableDrones || state.availableDrones || [];
+      const validIds = new Set(fleetIds());
+      state.selectedNodeIds = new Set([...state.selectedNodeIds].filter(id => validIds.has(id)));
+      if (!state.selectedNodeIds.size && state.missionStatus === 'idle') state.selectedNodeIds = new Set(generatedFleetIds().filter(id => validIds.has(id)));
       renderPhase(payload);
       setStatus(`Mission: ${state.missionStatus} | tick ${payload.currentTick || 0}/${Math.max(0, (payload.totalTicks || 1) - 1)} | liveExecution=${payload.liveExecution}`);
       $('topics').textContent = (payload.networkTopics || []).join(', ') || 'none';

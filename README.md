@@ -54,6 +54,9 @@ Deterministic code validates and compiles that intent.
 - Read-only simulated external ground/air asset tracks for integration planning.
 - Read-only ATAK/CoT-style telemetry scaffold for ATAK-equipped drones,
   personnel/team devices, and other air assets.
+- Read-only ATAK drone connector registration and heartbeat scaffold.
+- Simulation-safe CoT projection for fleet messages and Android/ATAK bridge
+  loopback scaffolding.
 - Read-only simulated observation reports with image captures and map pins.
 - Control-station web code split into mission session, HTTP routing, UI, and
   CLI entrypoint modules.
@@ -80,6 +83,10 @@ See [docs/EXTERNAL_ASSET_INTEGRATION.md](docs/EXTERNAL_ASSET_INTEGRATION.md)
 for the read-only external asset boundary.
 See [docs/ATAK_TELEMETRY_INTEGRATION.md](docs/ATAK_TELEMETRY_INTEGRATION.md)
 for the inbound ATAK telemetry scaffold.
+See [docs/ATAK_DRONE_CONNECTORS.md](docs/ATAK_DRONE_CONNECTORS.md) for the
+ATAK drone registration and read-only middleware connector scaffold.
+See [docs/ATAK_BRIDGE.md](docs/ATAK_BRIDGE.md) for CoT projection and the
+Android/ATAK bridge loopback scaffold.
 See [docs/OBSERVATION_REPORTS.md](docs/OBSERVATION_REPORTS.md) for the
 simulated image-report flow.
 

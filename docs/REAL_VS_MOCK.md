@@ -23,6 +23,8 @@ contracts:
   safety checks.
 - `integration_contracts/atak_telemetry.py` defines read-only ATAK/CoT-style
   track ingest contracts for drones, personnel/team devices, and air assets.
+- `integration_contracts/drone_connectors.py` defines read-only ATAK drone
+  connector registration, heartbeat, and middleware records.
 - `integration_contracts/external_assets.py` defines read-only external asset
   tracking contracts and rejects operational command/tasking fields.
 - `integration_contracts/observations.py` defines read-only image/coordinate
@@ -42,6 +44,8 @@ These parts are not real drone integrations:
 - `sim_adapters/runtime.py` generates synthetic telemetry along a route.
 - `sim_adapters/atak_feeds.py` creates fake ATAK-equipped drone,
   personnel/team, and air-asset tracks.
+- `sim_adapters/drone_connectors.py` creates fake ATAK drone registration,
+  heartbeat, and read-only middleware connector records.
 - `sim_adapters/external_assets.py` creates fake read-only ground and air asset
   tracks.
 - `sim_adapters/observations.py` creates fake image/coordinate observation

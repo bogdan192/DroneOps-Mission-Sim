@@ -8,6 +8,7 @@ commands.
 """
 
 import math
+import re
 import time
 
 
@@ -99,9 +100,8 @@ def validate_mission_dsl(mission):
     objective = str(mission.get("objective", "")).strip()
     if len(objective) < 4:
         raise ValueError("objective is required")
-    lowered = objective.lower()
     for term in PROHIBITED_TERMS:
-        if term in lowered:
+        if contains_blocked_term(objective, term):
             raise ValueError("objective contains prohibited term: {}".format(term))
 
     constraints = mission.get("constraints")
@@ -143,6 +143,11 @@ def reject_raw_command_fields(value, path="mission"):
             reject_raw_command_fields(child, "{}[{}]".format(path, index))
 
 
+def contains_blocked_term(text, term):
+    pattern = r"(?<![A-Za-z0-9_]){}(?![A-Za-z0-9_])".format(re.escape(str(term).lower()))
+    return re.search(pattern, str(text or "").lower()) is not None
+
+
 def distance_meters(a, b):
     lat1 = math.radians(float(a["lat"]))
     lat2 = math.radians(float(b["lat"]))
@@ -165,10 +170,11 @@ def self_test():
     )
     assert mission["liveExecution"] is False
     assert len(mission["routeWaypoints"]) == 3
+    assert contains_blocked_term("ram", "ram")
+    assert not contains_blocked_term("program a route", "ram")
     return mission
 
 
 if __name__ == "__main__":
     import json
     print(json.dumps(self_test(), indent=2, sort_keys=True))
-

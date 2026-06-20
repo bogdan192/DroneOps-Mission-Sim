@@ -23,6 +23,14 @@ The control station also has a read-only external asset integration contract for
 ground, air, maritime, fixed, or relay tracks. See
 `docs/EXTERNAL_ASSET_INTEGRATION.md`.
 
+The ATAK expansion scaffold now includes:
+
+- CoT-like projection of fleet messages at `GET /api/atak/cot`
+- Android/ATAK bridge envelopes in `integration_contracts/atak_bridge.py`
+- local loopback coverage in `scripts/atak_loopback_test.py`
+
+See `docs/ATAK_BRIDGE.md`.
+
 ## Future Adapter
 
 Replace local HTTP transport with:

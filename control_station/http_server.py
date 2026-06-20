@@ -3,7 +3,7 @@
 
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 from onboard_node.node import DEFAULT_ROUTE
 
@@ -22,6 +22,23 @@ class ControlStationHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/mission":
             self._json(200, self.server.mission_session.snapshot())
             return
+        if parsed.path == "/api/missions":
+            self._json(200, {
+                "mode": "SIMULATION_ONLY",
+                "liveExecution": False,
+                "missions": self.server.mission_session.persisted_missions(),
+            })
+            return
+        if parsed.path == "/api/mission/dsl":
+            mission = self.server.mission_session.current_mission_dsl()
+            if mission is None:
+                self._json(404, {"error": "no mission has been started", "mode": "SIMULATION_ONLY"})
+            else:
+                self._json(200, mission)
+            return
+        if parsed.path == "/api/mission/route.geojson":
+            self._json(200, self.server.mission_session.current_route_geojson())
+            return
         if parsed.path == "/api/atak/drones":
             self._json(200, self.server.mission_session.atak_snapshot())
             return
@@ -32,6 +49,34 @@ class ControlStationHandler(BaseHTTPRequestHandler):
                 "source": "mock-atak-feed",
                 "readOnly": True,
                 "tracks": snapshot["atakTracks"],
+            })
+            return
+        if parsed.path == "/api/atak/cot":
+            self._json(200, self.server.mission_session.cot_snapshot())
+            return
+        if parsed.path == "/api/connectors":
+            self._json(200, self.server.mission_session.connector_snapshot())
+            return
+        if parsed.path == "/api/connectors/atak-drones":
+            self._json(200, {
+                "mode": "SIMULATION_ONLY",
+                "readOnly": True,
+                "connectors": self.server.mission_session.connector_snapshot()["atakDroneConnectors"],
+            })
+            return
+        if parsed.path == "/api/connectors/drone-middleware":
+            self._json(200, {
+                "mode": "SIMULATION_ONLY",
+                "readOnly": True,
+                "connectors": self.server.mission_session.connector_snapshot()["droneMiddlewareConnectors"],
+            })
+            return
+        if parsed.path == "/api/connectors/atak-drones/orders":
+            node_id = parse_qs(parsed.query).get("nodeId", [""])[0]
+            self._json(200, {
+                "mode": "SIMULATION_ONLY",
+                "readOnly": True,
+                "orders": self.server.mission_session.node_orders_for(node_id),
             })
             return
         if parsed.path == "/api/assets":
@@ -60,8 +105,23 @@ class ControlStationHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/orders/live":
             self._live_order()
             return
+        if parsed.path == "/api/mission/route/import-geojson":
+            self._import_route_geojson()
+            return
         if parsed.path == "/api/observations":
             self._observation_report()
+            return
+        if parsed.path == "/api/connectors/atak-drones/register":
+            self._register_atak_drone_connector()
+            return
+        if parsed.path == "/api/connectors/atak-drones/heartbeat":
+            self._atak_drone_connector_heartbeat()
+            return
+        if parsed.path == "/api/connectors/atak-drones/orders":
+            self._node_order()
+            return
+        if parsed.path == "/api/connectors/atak-drones/order-results":
+            self._node_order_result()
             return
         self._json(404, {"error": "not_found"})
 
@@ -94,9 +154,44 @@ class ControlStationHandler(BaseHTTPRequestHandler):
         except Exception as exc:
             self._json(422, {"error": str(exc), "mode": "SIMULATION_ONLY"})
 
+    def _import_route_geojson(self):
+        try:
+            snapshot = self.server.mission_session.import_route_geojson(self._read_json())
+            self._json(200, snapshot)
+        except Exception as exc:
+            self._json(422, {"error": str(exc), "mode": "SIMULATION_ONLY"})
+
     def _observation_report(self):
         try:
             snapshot = self.server.mission_session.add_observation_report(self._read_json())
+            self._json(200, snapshot)
+        except Exception as exc:
+            self._json(422, {"error": str(exc), "mode": "SIMULATION_ONLY"})
+
+    def _register_atak_drone_connector(self):
+        try:
+            snapshot = self.server.mission_session.register_atak_drone_connector(self._read_json())
+            self._json(200, snapshot)
+        except Exception as exc:
+            self._json(422, {"error": str(exc), "mode": "SIMULATION_ONLY"})
+
+    def _atak_drone_connector_heartbeat(self):
+        try:
+            snapshot = self.server.mission_session.update_atak_drone_heartbeat(self._read_json())
+            self._json(200, snapshot)
+        except Exception as exc:
+            self._json(422, {"error": str(exc), "mode": "SIMULATION_ONLY"})
+
+    def _node_order(self):
+        try:
+            snapshot = self.server.mission_session.enqueue_node_order(self._read_json())
+            self._json(200, snapshot)
+        except Exception as exc:
+            self._json(422, {"error": str(exc), "mode": "SIMULATION_ONLY"})
+
+    def _node_order_result(self):
+        try:
+            snapshot = self.server.mission_session.record_node_order_result(self._read_json())
             self._json(200, snapshot)
         except Exception as exc:
             self._json(422, {"error": str(exc), "mode": "SIMULATION_ONLY"})

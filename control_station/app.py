@@ -4,6 +4,7 @@
 import argparse
 import json
 import os
+import tempfile
 import time
 
 from onboard_node.node import DEFAULT_ROUTE
@@ -17,7 +18,7 @@ PORT = 8092
 
 
 def self_test():
-    session = ControlStationMissionSession()
+    session = ControlStationMissionSession(mission_store_dir=tempfile.mkdtemp(prefix="droneops-missions-"))
     session.start(
         node_count=4,
         ticks=6,
@@ -27,7 +28,7 @@ def self_test():
     )
     first = session.snapshot()
     assert first["liveExecution"] is False
-    assert len(first["atakDrones"]) == 2
+    assert len(first["atakDrones"]) >= 2
     assert first["selectedNodeIds"] == ["drone-01", "drone-03"]
     assert len(first["routeWaypoints"]) >= 5
     held = session.apply_live_order(["drone-01"], "hold")
@@ -68,8 +69,26 @@ def main():
     if args.self_test:
         print(json.dumps(self_test(), indent=2, sort_keys=True))
         return
-    session = ControlStationMissionSession()
-    run_server(args.host, args.port, session, os.environ.get("GOOGLE_MAPS_API_KEY", ""))
+    session = ControlStationMissionSession(mission_store_dir=os.environ.get("DRONEOPS_MISSION_STORE_DIR"))
+    run_server(args.host, args.port, session, google_maps_api_key())
+
+
+def google_maps_api_key():
+    value = os.environ.get("GOOGLE_MAPS_API_KEY", "").strip()
+    if value:
+        return value
+    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "demo_config.env")
+    if not os.path.exists(config_path):
+        return ""
+    with open(config_path, "r", encoding="utf-8") as handle:
+        for line in handle:
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#") or "=" not in stripped:
+                continue
+            key, raw_value = stripped.split("=", 1)
+            if key.strip() == "GOOGLE_MAPS_API_KEY":
+                return raw_value.strip().strip('"').strip("'")
+    return ""
 
 
 if __name__ == "__main__":

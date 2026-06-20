@@ -45,3 +45,40 @@ The validator rejects raw controller fields, including:
 Controller-specific translation belongs in a separate adapter behind safety
 gates.
 
+## Persistence
+
+The control station persists every started mission DSL under:
+
+```text
+data/missions/<missionId>.json
+```
+
+The stored file is the validated mission object only. It keeps
+`mode: "simulation"` and `liveExecution: false`; it does not contain raw
+controller commands.
+
+Useful local API endpoints:
+
+```text
+GET /api/mission/dsl
+GET /api/missions
+```
+
+## GeoJSON Route Exchange
+
+Routes can be exported and imported as GeoJSON `LineString` features:
+
+```text
+GET /api/mission/route.geojson
+POST /api/mission/route/import-geojson
+```
+
+Coordinates use standard GeoJSON order:
+
+```json
+[lon, lat, alt]
+```
+
+Waypoint labels and altitudes are also mirrored in `properties.waypoints`.
+Imported routes are normalized by the same mission DSL validator, including
+latitude/longitude and altitude bounds.
